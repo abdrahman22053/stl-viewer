@@ -84,14 +84,16 @@ export const FileUpload = ({ onFileSelect, selectedFile, onClear, isLoading }: F
             className="flex items-center justify-between p-4 bg-secondary rounded-lg"
           >
             <div className="flex items-center gap-3">
-              <FileCheck className="w-8 h-8 text-primary" />
-              <div>
-                <p className="font-medium">{selectedFile.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-            </div>
+  <FileCheck className="w-8 h-8 text-primary" />
+  <div>
+    <p className="font-medium">{selectedFile.name}</p>
+    <p className="text-sm text-muted-foreground">
+      {selectedFile.size < 1024 * 1024
+        ? `${(selectedFile.size / 1024).toFixed(2)} kB`
+        : `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`}
+    </p>
+  </div>
+</div>
             <Button
               variant="ghost"
               size="icon"

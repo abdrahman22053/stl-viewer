@@ -17,8 +17,11 @@ export const Header = () => {
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             className="p-2 rounded-lg bg-primary/10 glow-primary"
           >
-            <Box className="w-8 h-8 text-primary" />
-          </motion.div>
+    
+  <Box className="w-8 h-8 text-primary" />
+</motion.div>
+             
+           
           <div>
             <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               STL Viewer 3D
@@ -40,4 +43,5 @@ export const Header = () => {
       </div>
     </motion.header>
   );
-};
+};    
+
