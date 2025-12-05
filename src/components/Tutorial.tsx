@@ -69,7 +69,7 @@ export const Tutorial = () => {
 
   useEffect(() => {
     // Check if tutorial was already completed
-    const completed = false
+    const completed = localStorage.getItem(TUTORIAL_STORAGE_KEY);
     if (!completed) {
       // Small delay to ensure DOM is ready
       setTimeout(() => {
