@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage, Center } from "@react-three/drei";
+import { OrbitControls, Center } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import * as THREE from "three";
 import { motion } from "framer-motion";
@@ -42,7 +42,7 @@ interface Dimensions {
 }
 
 export const STLViewer = ({ file }: STLViewerProps) => {
-  const [dimensions, setDimensions] = useState<{ width: number; height: number; depth: number } | null>(null);
+  
 
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,11 +123,16 @@ export const STLViewer = ({ file }: STLViewerProps) => {
         style={{ background: "transparent" }}
       >
         <Suspense fallback={null}>
-          {geometry && (
-            <Stage environment="city" intensity={0.6} shadows="contact">
-              <STLModel geometry={geometry} />
-            </Stage>
-          )}
+          {/* Lighting */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+          <directionalLight position={[-10, -10, -5]} intensity={0.5} />
+          <pointLight position={[0, 0, 10]} intensity={0.8} />
+          
+          {/* Model */}
+          {geometry && <STLModel geometry={geometry} />}
+          
+          {/* Controls */}
           <OrbitControls
             enableDamping
             dampingFactor={0.05}
@@ -166,45 +171,6 @@ export const STLViewer = ({ file }: STLViewerProps) => {
         </motion.div>
       )}
 
-      {/* Controls hint */}
-      {/* Dimensions avec flèches */}
-      {!loading && dimensions && (
-        <>
-          {/* Largeur (Width) - Bas */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2"
-          >
-            <div className="w-8 h-0.5 bg-primary"></div>
-            <div className="bg-primary/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-primary shadow-lg">
-              <span className="text-xs font-semibold text-primary-foreground">
-                ← {dimensions.width.toFixed(2)} mm →
-              </span>
-            </div>
-            <div className="w-8 h-0.5 bg-primary"></div>
-          </motion.div>
-
-          {/* Hauteur (Height) - Droite */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2"
-          >
-            <div className="w-0.5 h-8 bg-primary"></div>
-            <div className="bg-primary/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-primary shadow-lg writing-mode-vertical">
-              <span className="text-xs font-semibold text-primary-foreground whitespace-nowrap">
-                ↑ {dimensions.height.toFixed(2)} mm ↓
-              </span>
-            </div>
-            <div className="w-0.5 h-8 bg-primary"></div>
-          </motion.div>
-
-          
-        </>
-      )}
 
       {/* Controls hint */}
       {!loading && (
