@@ -4,7 +4,7 @@ import { OrbitControls, Stage, Center } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import * as THREE from "three";
 import { motion } from "framer-motion";
-import { Loader2, RotateCw, ZoomIn } from "lucide-react";
+import { Loader2, RotateCw, ZoomIn, Ruler } from "lucide-react";
 
 interface STLViewerProps {
   file: File;
@@ -35,10 +35,17 @@ const LoadingSpinner = () => (
   </div>
 );
 
+interface Dimensions {
+  width: number;
+  height: number;
+  depth: number;
+}
+
 export const STLViewer = ({ file }: STLViewerProps) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState<Dimensions | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +59,17 @@ export const STLViewer = ({ file }: STLViewerProps) => {
         const arrayBuffer = event.target?.result as ArrayBuffer;
         const loadedGeometry = loader.parse(arrayBuffer);
         loadedGeometry.computeVertexNormals();
+        
+        // Calculate bounding box to get dimensions
+        loadedGeometry.computeBoundingBox();
+        const box = loadedGeometry.boundingBox;
+        if (box) {
+          const width = box.max.x - box.min.x;
+          const height = box.max.y - box.min.y;
+          const depth = box.max.z - box.min.z;
+          setDimensions({ width, height, depth });
+        }
+        
         setGeometry(loadedGeometry);
         setLoading(false);
       } catch (err) {
@@ -117,6 +135,35 @@ export const STLViewer = ({ file }: STLViewerProps) => {
         </Suspense>
       </Canvas>
       
+      {/* Dimensions Info */}
+      {!loading && dimensions && (
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+          className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 border border-border shadow-lg"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Ruler className="w-4 h-4 text-primary" />
+            <span className="text-sm font-display font-semibold text-foreground">Dimensions</span>
+          </div>
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between gap-4">
+              <span>Largeur (X):</span>
+              <span className="font-medium text-foreground">{dimensions.width.toFixed(2)} mm</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span>Hauteur (Y):</span>
+              <span className="font-medium text-foreground">{dimensions.height.toFixed(2)} mm</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span>Profondeur (Z):</span>
+              <span className="font-medium text-foreground">{dimensions.depth.toFixed(2)} mm</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Controls hint */}
       {!loading && (
         <motion.div

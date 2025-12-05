@@ -16,10 +16,22 @@ export const ThemeToggle = () => {
         variant="outline"
         size="icon"
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="rounded-full border-border hover:border-primary transition-all"
+        className="relative rounded-xl border-border/60 hover:border-primary/50 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
       >
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        <motion.div
+          animate={theme === "dark" ? { rotate: 0, scale: 1 } : { rotate: 90, scale: 0 }}
+          transition={{ duration: 0.3 }}
+          className="absolute"
+        >
+          <Moon className="h-[1.2rem] w-[1.2rem] text-primary" />
+        </motion.div>
+        <motion.div
+          animate={theme === "dark" ? { rotate: -90, scale: 0 } : { rotate: 0, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="absolute"
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] text-primary" />
+        </motion.div>
         <span className="sr-only">Changer le thème</span>
       </Button>
     </motion.div>

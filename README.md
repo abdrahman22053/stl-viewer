@@ -44,6 +44,14 @@ Application web moderne et responsive pour visualiser des fichiers STL en 3D, co
 - Notifications toast pour feedback utilisateur
 - Interface accessible avec support clavier
 
+### 🎓 Tutoriel Interactif
+- **Onboarding automatique** au premier lancement
+- Guide pas-à-pas avec 4 étapes explicatives
+- Effet de blur sur toute la page sauf l'élément mis en avant
+- Blocage des interactions pendant le tutoriel
+- Navigation intuitive (Précédent/Suivant/Sauter)
+- Sauvegarde de l'état de complétion dans localStorage
+
 ## 🛠️ Technologies Utilisées
 
 ### Core Framework
@@ -109,10 +117,13 @@ stl-viewer-3d/
 ├── src/
 │   ├── components/          # Composants React réutilisables
 │   │   ├── ui/             # Composants shadcn/ui
+│   │   ├── ui/             # Composants shadcn/ui
 │   │   ├── FileUpload.tsx  # Gestion upload de fichiers
 │   │   ├── STLViewer.tsx   # Visualisateur 3D
 │   │   ├── Header.tsx      # En-tête avec navigation
 │   │   ├── ThemeToggle.tsx # Bouton de changement de thème
+│   │   ├── Tutorial.tsx    # Système de tutoriel interactif
+│   │   ├── AnimatedBackground.tsx # Arrière-plan animé
 │   │   └── NavLink.tsx     # Lien de navigation personnalisé
 │   ├── pages/              # Pages de l'application
 │   │   ├── Index.tsx       # Page principale
@@ -243,6 +254,13 @@ Compatible avec : GitHub Pages, Cloudflare Pages, Firebase Hosting, AWS S3/Cloud
 
 ## 📝 Utilisation
 
+### Première Utilisation
+Lors de votre première visite, un **tutoriel interactif** s'affiche automatiquement pour vous guider à travers les fonctionnalités de l'application. Vous pouvez :
+- Suivre les étapes avec les boutons "Précédent" et "Suivant"
+- Sauter le tutoriel à tout moment avec le bouton "X"
+- Le tutoriel ne s'affichera plus après complétion (sauvegardé dans localStorage)
+
+### Utilisation Normale
 1. **Upload** : Cliquez sur la zone de drop ou faites glisser un fichier STL
 2. **Visualisation** : Le modèle 3D s'affiche automatiquement
 3. **Navigation 3D** :
@@ -250,8 +268,35 @@ Compatible avec : GitHub Pages, Cloudflare Pages, Firebase Hosting, AWS S3/Cloud
    - Molette : zoom
    - Clic droit + déplacement : panoramique
 4. **Nouveau fichier** : Cliquez sur "Nouveau fichier" pour recommencer
+5. **Thème** : Basculez entre mode clair et sombre avec le bouton en haut à droite
+
+### Réinitialiser le Tutoriel
+Pour revoir le tutoriel, exécutez dans la console du navigateur :
+```javascript
+localStorage.removeItem('stl-viewer-tutorial-completed');
+```
+Puis rechargez la page.
 
 ## 🔧 Personnalisation Avancée
+
+### Personnaliser le Tutoriel
+
+Modifiez `src/components/Tutorial.tsx` pour ajouter ou modifier les étapes :
+
+```typescript
+const TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    id: "header",
+    selector: "[data-tutorial='header']",
+    title: "Bienvenue !",
+    description: "Votre description ici",
+    position: "bottom", // top, bottom, left, right, center
+  },
+  // Ajoutez d'autres étapes...
+];
+```
+
+N'oubliez pas d'ajouter l'attribut `data-tutorial` aux éléments correspondants dans vos composants.
 
 ### Ajouter de nouveaux formats 3D
 
