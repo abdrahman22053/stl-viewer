@@ -28,15 +28,35 @@ const Index = () => {
     toast.info("Fichier supprimé");
   };
 
-  const handleDownloadSample=()=>{
-    const sampleUrl = "../public/knitted_cat_singlecolor.stl"; 
-
-    const link = document.createElement("a");
-    link.href = sampleUrl;
-    link.download = "test.stl";
-    link.click();
-
-    toast.success("Fichier test téléchargé !");
+  const handleDownloadSample = async () => {
+    try {
+      // In Vite, files in public folder are served from root
+      const sampleUrl = "/knitted_cat_singlecolor.stl";
+      
+      // Fetch the file to ensure it's available
+      const response = await fetch(sampleUrl);
+      if (!response.ok) {
+        throw new Error("Fichier non trouvé");
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "knitted_cat_singlecolor.stl";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the object URL
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Fichier test téléchargé !");
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast.error("Erreur lors du téléchargement du fichier");
+    }
   }
 
   return (
