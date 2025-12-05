@@ -124,10 +124,10 @@ const Index = () => {
         
         // Mettre à jour la progression si on connaît la taille totale
         if (total > 0) {
-          const progress = Math.round((receivedLength / total) * 100);
+          const progress = Math.min(100, Math.round((receivedLength / total) * 100));
           setDownloadProgress(progress);
         } else {
-          // Estimation basée sur le nombre de chunks
+          // Estimation basée sur le nombre de chunks (max 95% jusqu'à la fin)
           setDownloadProgress(Math.min(95, chunks.length * 5));
         }
       }
@@ -153,7 +153,12 @@ const Index = () => {
       // Clean up the object URL
       window.URL.revokeObjectURL(url);
       
+      // S'assurer que la progression est à 100% à la fin
       setDownloadProgress(100);
+      
+      // Petit délai pour afficher 100% avant de masquer
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       toast.success("Fichier test téléchargé !");
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
