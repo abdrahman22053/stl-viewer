@@ -127,8 +127,6 @@ export const FileUpload = ({ onFileSelect, selectedFile, onClear, isLoading, onU
               </div>
             </div>
             <Button
-              variant="ghost"
-              size="icon"
               onClick={onClear}
               disabled={isLoading}
               className="hover:bg-destructive/10 hover:text-destructive rounded-lg transition-all"
