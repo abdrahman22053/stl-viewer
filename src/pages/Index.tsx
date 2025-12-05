@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
 import { FileUpload } from "@/components/FileUpload";
 import { STLViewer } from "@/components/STLViewer";
@@ -7,12 +7,61 @@ import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { Tutorial } from "@/components/Tutorial";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Info, Upload } from "lucide-react";
+import { Info, Upload, Loader2, WifiOff } from "lucide-react";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isSlowConnection, setIsSlowConnection] = useState(false);
   const fileUploadOpenRef = useRef<(() => void) | null>(null);
+
+  // Fonction pour détecter la qualité de la connexion
+  const checkConnectionSpeed = async (): Promise<boolean> => {
+    try {
+      // Vérifier l'API NetworkInformation si disponible
+      const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      
+      if (connection) {
+        // Si l'API est disponible, vérifier la vitesse effective
+        const effectiveType = connection.effectiveType;
+        const downlink = connection.downlink;
+        
+        // Considérer comme lent si: 2g, slow-2g, ou downlink < 1 Mbps
+        if (effectiveType === '2g' || effectiveType === 'slow-2g' || (downlink && downlink < 1)) {
+          return true;
+        }
+      }
+      
+      // Test de vitesse simple: mesurer le temps de réponse
+      const startTime = performance.now();
+      const testUrl = "/knitted_cat_singlecolor.stl";
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // Timeout de 2 secondes
+      
+      try {
+        const response = await fetch(testUrl, {
+          method: 'HEAD',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        // Si la réponse prend plus de 1.5 secondes, considérer comme lent
+        return responseTime > 1500;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        // Si timeout ou erreur, considérer comme lent
+        return true;
+      }
+    } catch (error) {
+      // En cas d'erreur, supposer une connexion normale
+      return false;
+    }
+  };
 
   const handleFileSelect = (file: File) => {
     setIsLoading(true);
@@ -29,17 +78,69 @@ const Index = () => {
   };
 
   const handleDownloadSample = async () => {
+    setIsDownloading(true);
+    setDownloadProgress(0);
+    setIsSlowConnection(false);
+    
     try {
+      // Vérifier la qualité de la connexion
+      const slowConnection = await checkConnectionSpeed();
+      setIsSlowConnection(slowConnection);
+      
+      if (slowConnection) {
+        toast.info("Connexion lente détectée. Le téléchargement peut prendre du temps...", {
+          duration: 3000,
+        });
+      }
+      
       // In Vite, files in public folder are served from root
       const sampleUrl = "/knitted_cat_singlecolor.stl";
       
-      // Fetch the file to ensure it's available
+      // Fetch the file with progress tracking
       const response = await fetch(sampleUrl);
       if (!response.ok) {
         throw new Error("Fichier non trouvé");
       }
       
-      const blob = await response.blob();
+      const contentLength = response.headers.get("content-length");
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      
+      if (!response.body) {
+        throw new Error("Corps de la réponse non disponible");
+      }
+      
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let receivedLength = 0;
+      
+      // Lire les données avec suivi de progression
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        chunks.push(value);
+        receivedLength += value.length;
+        
+        // Mettre à jour la progression si on connaît la taille totale
+        if (total > 0) {
+          const progress = Math.round((receivedLength / total) * 100);
+          setDownloadProgress(progress);
+        } else {
+          // Estimation basée sur le nombre de chunks
+          setDownloadProgress(Math.min(95, chunks.length * 5));
+        }
+      }
+      
+      // Combiner tous les chunks en un seul blob
+      const allChunks = new Uint8Array(receivedLength);
+      let position = 0;
+      for (const chunk of chunks) {
+        allChunks.set(chunk, position);
+        position += chunk.length;
+      }
+      
+      const blob = new Blob([allChunks]);
       const url = window.URL.createObjectURL(blob);
       
       const link = document.createElement("a");
@@ -52,10 +153,17 @@ const Index = () => {
       // Clean up the object URL
       window.URL.revokeObjectURL(url);
       
+      setDownloadProgress(100);
       toast.success("Fichier test téléchargé !");
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
       toast.error("Erreur lors du téléchargement du fichier");
+    } finally {
+      setTimeout(() => {
+        setIsDownloading(false);
+        setDownloadProgress(0);
+        setIsSlowConnection(false);
+      }, 500);
     }
   }
 
@@ -65,6 +173,53 @@ const Index = () => {
       <Tutorial />
       <Header />
       
+      {/* Loading Overlay pour connexion lente */}
+      <AnimatePresence>
+        {isDownloading && isSlowConnection && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card-modern p-6 md:p-8 max-w-md mx-4 text-center"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                  <WifiOff className="w-6 h-6 text-accent absolute -bottom-1 -right-1" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-display font-bold mb-2 gradient-text">
+                    Connexion lente détectée
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Le téléchargement est en cours. Veuillez patienter...
+                  </p>
+                  {downloadProgress > 0 && (
+                    <div className="w-full bg-muted rounded-full h-2 mb-2">
+                      <motion.div
+                        className="bg-primary h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${downloadProgress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {downloadProgress > 0 ? `${downloadProgress}%` : "Chargement..."}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="flex-1 w-full max-w-7xl mx-auto p-3 md:p-4 flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -139,10 +294,20 @@ const Index = () => {
               >
                 <Button
                   onClick={handleDownloadSample}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 font-medium"
+                  disabled={isDownloading}
+                  className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Télécharger un fichier test
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Téléchargement... {downloadProgress > 0 && `${downloadProgress}%`}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Télécharger un fichier test
+                    </>
+                  )}
                 </Button>
               </motion.div>
             )}
